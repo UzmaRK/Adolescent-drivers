@@ -27,7 +27,7 @@ library(janitor)
 library(vtree)
         
 ## Reading the data from the above mentioned directory
-data <- data.table::fread("Underage RTIs1.csv", data.table = FALSE)
+data <- data.table::fread("Underage RTIs2.csv", data.table = FALSE)
 
 #describe data
 names(data)
@@ -94,6 +94,15 @@ str(data$location_detail)
 data$location_detail <- as.factor(data$location_detail)
 levels(data$location_detail) <- c("Intersection","Midblock")
 table(data$location_detail)
+
+##### New Code 25-06-2021###
+##### GCS #######
+data$gcs
+data$gcs_cat <- as.factor(data$gcs)
+levels(data$gcs_cat) <- c("13 to 15","9 to 12","6 to 8", "4 to 5", "3")
+table(data$gcs_cat)
+summary(data$gcs_cat)
+
 
 ##### Head injuries ######
 data$head_cat <-as.factor(ifelse(is.na(data$cleaned_head),0,1))
@@ -163,7 +172,6 @@ data$iss_score_final <- as.factor(data$iss_score_final)
 table(data$iss_score_final)
 
 
-
 ### Cross table between age and injuries in body parts
 #tabyl(data, road_user, vehicle_1)
 #tabyl(data, road_user, vehicle_1) %>%
@@ -179,7 +187,6 @@ table(data$iss_score_final)
 #tabyl(data, vehicle_1, vehicle_2) %>%
 #  adorn_percentages("row")%>%
 # adorn_pct_formatting(digits = 1)
-
 
 tabyl(data, vehicle_1, vehicle_2) %>%
  adorn_percentages("col")%>%
@@ -219,6 +226,7 @@ catVars <- c("age_cat",
              "vehicle_2",
              "location_detail",
              "helmet_use",
+             "gcs_cat",
             "head_cat", 
             "face_cat",
             "extremity_cat",  
@@ -239,6 +247,7 @@ label.list <-list(age_cat = "Age in Years",
                   arrival_vehicle = "Arrival Vehicle",
                   location_detail = "Crash Location",
                   helmet_use = "Helmet use",
+                  gcs_cat = "GCS Score",
                   head_cat = "Head Injury",
                   face_cat = "Face Injury",
                   extremity_cat = "Upper Lower Extrimity",
@@ -374,12 +383,17 @@ model11
 summary(model11)
 pretty_regression_table(model11)
 
-
-
+###### Univariate logistic regression of GCS category ####
+model12 <- glm(outcome ~ gcs_cat, family = "binomial", data = data)
+model12
+summary(model12)
+pretty_regression_table(model12)
+or.ci<- exp(cbind(OR = coef(model12), confint(model12)))
+round(or.ci, digits=2)
 
 #Multivariate Logistic reg
-model16 <- glm(outcome ~  age_cat +gender + days_weekend + day_night + location_detail +
-                 arrival_vehicle + helmet_use + iss_score_final,
+model16 <- glm(outcome ~  age_cat +gender + days_weekend + day_night  + location_detail +
+                 arrival_vehicle + helmet_use + iss_score_final + gcs_cat,
                family = "binomial", data = data)
 summary(model16)
 or.ci<- exp(cbind(OR = coef(model16), confint(model16)))
@@ -466,13 +480,13 @@ pretty_regression_table(model24)
 
 
 #Univariate death with ISS
-model26 <- glm(iss_score_final ~ outcome, family = "binomial", data = data)
+model26 <- glm(iss_score_final ~ gcs_cat, family = "binomial", data = data)
 model26
 summary(model26)
 pretty_regression_table(model26)
 
 #Multivariate Logistic reg
-model27 <- glm(iss_score_final ~  age_cat + gender +days_weekend  + day_night +location_detail + helmet_use + arrival_vehicle + outcome,
+model27 <- glm(iss_score_final ~  age_cat + gender +days_weekend  + day_night +location_detail + helmet_use + arrival_vehicle + gcs_cat,
                family = "binomial", data = data)
 summary(model27)
 or.ci<- exp(cbind(OR = coef(model27), confint(model27)))
